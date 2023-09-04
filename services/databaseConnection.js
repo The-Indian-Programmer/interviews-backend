@@ -8,6 +8,8 @@ const CONFIG = require('../config/config');
 
 const MONGODB_URI = `mongodb+srv://sumitkosta07:FMTqz0SXENeUj8gj@cluster0.ewnuswv.mongodb.net/websulanate-social-media-app`
 
+console.log(MONGODB_URI);
+
 const MONGODB_OPTIONS = {
     useNewUrlParser: true,
     useUnifiedTopology: true,
@@ -15,10 +17,10 @@ const MONGODB_OPTIONS = {
     // useFindAndModify: false,
     authSource: CONFIG.DATABASE_AUTH_SOURCE,
     user: CONFIG.DATABASE_USERNAME,
-    pass: CONFIG.DATABASE_PASSWORD
+    pass: CONFIG.DATABASE_PASSWORD,
 }
 
-mongoose.connect(MONGODB_URI, MONGODB_OPTIONS);
+mongoose.connect(MONGODB_URI);
 
 const db = mongoose.connection;
 

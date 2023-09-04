@@ -133,4 +133,32 @@ Post.getPostsListByAuthor = (data) => {
       });
   });
 }
+
+
+Post.getPostById = (data, userId) => {
+  return new Promise((resolve, reject) => {
+    let where = {
+      ...data.where,
+    };
+    let order = data.order;
+    postSchema
+      .findOne(where)
+      .populate({
+        path: "author",
+        select: "username profile.name profile.profilePicture",
+      })
+      .populate({
+        path: "likes",
+        $elemMatch: !helper.isEmpty(userId) ? { _id: new mongoose.Types.ObjectId(userId) } : {},
+        select: "_id",
+      })
+      .exec()
+      .then((result) => {
+        resolve({ err: null, data: result });
+      })
+      .catch((err) => {
+        reject({ err: err, data: null });
+      });
+  });
+};
 module.exports = Post;

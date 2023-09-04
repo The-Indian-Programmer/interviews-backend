@@ -22,6 +22,8 @@ module.exports.msg = function (code) {
     MSG019: "Followed successfully!",
     MSG020: "Unfollowed successfully!",
     MSG021: "User found successfully!",
+    MSG022: "Post created successfully!",
+    MSG023: "Post updated successfully!",
   };
   return typeof codeArr[code] !== "undefined" ? codeArr[code] : "";
 };

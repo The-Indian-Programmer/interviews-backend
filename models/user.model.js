@@ -107,7 +107,18 @@ User.unFollowUser = (where, data) => {
 
 User.getFollowers = (where) => {
     return new Promise((resolve, reject) => {
-        FollowSchema.find(where).populate('follower').then((result) => {
+       
+        FollowSchema.countDocuments(where).then((result) => {
+            resolve({ err: null, data: result });
+        }).catch((error) => {
+            reject({ err: error, data: null });
+        });
+    });
+}
+
+User.getDetails = (where, columns) => {
+    return new Promise(async (resolve, reject) => {
+        userSchema.findById(where, columns).then((result) => {
             resolve({ err: null, data: result });
         }).catch((error) => {
             reject({ err: error, data: null });

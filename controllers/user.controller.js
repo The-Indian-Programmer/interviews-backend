@@ -3,6 +3,7 @@ require("dotenv").config();
 
 const UserModel = require("../models/user.model");
 const PostModel = require("../models/post.model");
+const { default: mongoose } = require("mongoose");
 
 module.exports.createUser = (req, res) => {
     let formData = req.body;
@@ -62,7 +63,7 @@ module.exports.createUser = (req, res) => {
 module.exports.getUserDetails = (req, res) => {
     const formData = req.body;
     const schema = {
-        username: "required",
+        userId: "required",
     };
 
     // validate request
@@ -80,12 +81,12 @@ module.exports.getUserDetails = (req, res) => {
         try {
             /* Get user details */
             let info = {};
-            info.where = { username: formData.username };
+            info.where = { _id: new mongoose.Types.ObjectId(formData.userId) };
             info.columns = { password: 0, tokens: 0, updatedAt: 0 };
-            const userDetails = await UserModel.getUserOnlyDetail(info.where, info.columns);
+            const userDetails = await UserModel.getDetails(info.where, info.columns);
+            if (!helper.isEmpty(userDetails.data)) {
+                let userId = formData.userId;
 
-            if (!helper.isEmpty(userDetails)) {
-                let userId = userDetails._doc._id;
 
                 /* Get user posts */
                 let info2 = {};
@@ -103,7 +104,7 @@ module.exports.getUserDetails = (req, res) => {
                 const follower = await UserModel.getFollowers(info3.where);
 
                 if (!helper.isEmpty(follower.err)) return res.status(422).json({ status: false, message: msgHelper.msg("MSG002") });
-                totalFollowers = follower.data.length;
+                totalFollowers = follower.data;
 
 
                 let totalFollowing = 0;
@@ -113,7 +114,7 @@ module.exports.getUserDetails = (req, res) => {
 
                 if (!helper.isEmpty(following.err)) return res.status(422).json({ status: false, message: msgHelper.msg("MSG002") });
 
-                totalFollowing = following.data.length;
+                totalFollowing = following.data;
 
 
                 let isFollowing = false;
@@ -129,9 +130,9 @@ module.exports.getUserDetails = (req, res) => {
 
 
 
-                res.status(200).json({ status: true, message: msgHelper.msg("MSG021"), data: { ...userDetails._doc, posts: userPosts.data, totalFollowers, totalFollowing, isFollowing } });
+                res.status(200).json({ status: true, message: msgHelper.msg("MSG021"), data: { ...userDetails.data._doc, posts: userPosts.data, totalFollowers, totalFollowing, isFollowing } });
             } else {
-                res.status(422).json({ status: false, message: msgHelper.msg("MSG002") });
+                res.status(422).json({ status: false, message: msgHelper.msg("MSG002") , error: userDetails.err});
             }
         } catch (error) {
             res.status(422).json({ status: false, message: msgHelper.msg("MSG002") });
