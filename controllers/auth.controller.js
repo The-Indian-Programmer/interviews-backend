@@ -2,6 +2,8 @@
 require("dotenv").config()
 
 const UserModel = require("../models/user.model")
+const NotificationModel = require("../models/notification.model")
+const mongoose = require("mongoose")
 module.exports.login = (req, res) => {
     let formData = req.body
     let schema = {
@@ -51,13 +53,21 @@ module.exports.getUserDetails = async (req, res) => {
     if (helper.isEmpty(user)) return res.status(422).json({ status: false, message: msgHelper.msg('MSG006') })
 
     let info = {}
-    info.columns = { password: 0, tokens: 0 }
-    info.where = { _id: user._id }
-    const userDetails = await UserModel.getUserOnlyDetail(info.where, info.columns)
+    info.where = { 
+        user:   new mongoose.Types.ObjectId(user._id),
+        read:  false,
+    }
 
-    if (helper.isEmpty(userDetails)) return res.status(422).json({ status: false, message: msgHelper.msg('MSG006') })
+    let notificationCount = await NotificationModel.getNotificationCount(info.where)
 
-    res.status(200).json({ status: true, message: 'User details fetched successfully', data: { user: userDetails, } })
+    
+    if (!helper.isEmpty(notificationCount.err)) return res.status(422).json({ status: false, message: msgHelper.msg('MSG006') })
+
+    let data = {
+        notifications: notificationCount.data,
+    }
+
+    res.status(200).json({ status: true, message: 'User details fetched successfully', data: data })
 }
 
 

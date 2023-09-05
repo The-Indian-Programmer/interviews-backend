@@ -112,6 +112,8 @@ module.exports.getPostsList = async (req, res) => {
 
             const hasMore = (postCount.data > (formData.page * formData.perPageItem)) ? true : false;
 
+
+
             return res.status(200).json({ status: true, message: msgHelper.msg('MSG014'), data: { data: posts.data, hasMore } });
 
         } catch (error) {
@@ -196,10 +198,21 @@ module.exports.updatePostLikeDislike = (req, res) => {
                 }
             }
 
+
+
             const postUpdate = await postModel.updatePost(info);
             if (!helper.isEmpty(postUpdate.err)) return res.status(500).json({ status: false, message: msgHelper.msg('MSG002'), error: postUpdate.err });
 
-            return res.status(200).json({ status: true, message: msgHelper.msg('MSG017'), data: { userId: userDetail._id, postId: formData.postId } });
+            res.status(200).json({ status: true, message: msgHelper.msg('MSG017'), data: { userId: userDetail._id, postId: formData.postId } });
+            
+            /* Emit Events */
+            if (formData.like) {
+                NotificationEvents.emit('liked-post', { userId: userDetail._id, postId: formData.postId, authorId: postUpdate.data.author, type:"post" });
+            } else {
+                NotificationEvents.emit('unliked-post', { userId: userDetail._id, postId: formData.postId, authorId: postUpdate.data.author, type:"post" });
+            }
+
+            
 
         } catch (error) {
             res.status(500).json({ status: false, message: error.message, error: error });
@@ -334,6 +347,7 @@ module.exports.getPostDetailsByPostId = (req, res) => {
         info2.where = {
             postId: formData.postId
         }
+        info2.orderBy = 'createdAt'
         let commentsDetail = await CommentModel.getComment(info2.where);
 
         if (!helper.isEmpty(commentsDetail.err)) return res.status(500).json({ status: false, message: msgHelper.msg('MSG002'), error: commentsDetail.err });
@@ -371,7 +385,15 @@ module.exports.addPostComment = (req, res) => {
 
             const post = await CommentModel.addPostComment(info.data);
 
-            return res.status(200).json({ status: true, message: msgHelper.msg('MSG017'), data: { userId: userDetail._id, postId: formData.postId } });
+            if (!helper.isEmpty(post.err)) return res.status(500).json({ status: false, message: msgHelper.msg('MSG002'), error: post.err });
+
+
+
+            res.status(200).json({ status: true, message: msgHelper.msg('MSG024'), data: { userId: userDetail._id, postId: formData.postId } });
+
+            console.log("post", post)
+            /* Emit Events */
+            NotificationEvents.emit('commented-post', { userId: userDetail._id, postId: formData.postId, type:"post" });
 
         } catch (error) {
             res.status(500).json({ status: false, message: error.message, error: error });

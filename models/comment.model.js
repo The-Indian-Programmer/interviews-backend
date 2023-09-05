@@ -17,7 +17,7 @@ CommentModel.addPostComment = (data) => {
 
 CommentModel.updateComment = (data) => {
     return new Promise((resolve, reject) => {
-        let {postId, userId, commentId, commentContent} = data;
+        let { postId, userId, commentId, commentContent } = data;
 
         commentSchema.updateOne(
             { _id: commentId, postId: postId, userId: userId },
@@ -32,7 +32,7 @@ CommentModel.updateComment = (data) => {
 
 CommentModel.deleteComment = (data) => {
     return new Promise((resolve, reject) => {
-        let {postId, userId, commentId} = data;
+        let { postId, userId, commentId } = data;
 
         commentSchema.updateOne(
             { _id: commentId, postId: postId, userId: userId },
@@ -47,44 +47,58 @@ CommentModel.deleteComment = (data) => {
 
 CommentModel.getComment = (data) => {
     return new Promise((resolve, reject) => {
-        let {postId, userId} = data;
+        let { postId, userId } = data;
 
         let where = {}
+        let orderBy = {};
 
         if (!helper.isEmpty(postId)) {
             where.postId = new mongoose.Types.ObjectId(postId);
         }
-         
+
         if (!helper.isEmpty(userId)) {
             where.userId = new mongoose.Types.ObjectId(userId);
+        }
+
+
+
+        if (!helper.isEmpty(data.orderBy)) {
+            orderBy[data.orderBy] = -1; // Use -1 for descending order
+        } else {
+            orderBy.createdAt = -1;
         }
 
         // get user info also
         commentSchema.aggregate([
             {
                 $match: where
-            },{
+            },
+            {
+                $sort: orderBy
+            }
+            , {
                 $lookup: {
-                  from: "users",
-                  localField: "userId",
-                  foreignField: "_id",
-                  as: "user"
+                    from: "users",
+                    localField: "userId",
+                    foreignField: "_id",
+                    as: "user"
                 }
-              },
-              {
+            },
+            {
                 $unwind: "$user",
-                
-              },
-              {
+
+            },
+            {
                 $project: {
-                  _id: 1,
-                  "comment": 1,
-                  "user.profile.profilePicture": 1,
-                  "user._id": 1,
-                  "user.username": 1,
+                    _id: 1,
+                    "comment": 1,
+                    "user.profile.profilePicture": { $ifNull: ["$user.profile.profilePicture", ""] },
+                    "user.profile.name": { $ifNull: ["$user.profile.name", ""] },
+                    "user._id": 1,
+                    "user.username": 1,
                 }
-              }
-              
+            }
+
         ]).then((result) => {
             resolve({ err: null, data: result });
         }).catch((err) => {

@@ -3,6 +3,7 @@ require("dotenv").config();
 
 const UserModel = require("../models/user.model");
 const PostModel = require("../models/post.model");
+const NotificationModel = require("../models/notification.model");
 const { default: mongoose } = require("mongoose");
 
 module.exports.createUser = (req, res) => {
@@ -62,6 +63,7 @@ module.exports.createUser = (req, res) => {
 
 module.exports.getUserDetails = (req, res) => {
     const formData = req.body;
+    const loggedInUser = req.authData.user;
     const schema = {
         userId: "required",
     };
@@ -118,13 +120,13 @@ module.exports.getUserDetails = (req, res) => {
 
 
                 let isFollowing = false;
-                
-                if (!helper.isEmpty(formData.userId)){
+
+                if (!helper.isEmpty(formData.userId)) {
                     let info5 = {};
-                    info5.where = { follower: formData.userId, following: userId };
+                    info5.where = { following: userId, follower: loggedInUser._id };
                     const isFollow = await UserModel.getFollowers(info5.where);
-                    
-                    if (!helper.isEmpty(isFollow.err)) return res.status(422).json({ status: false, message: msgHelper.msg("MSG002") });   
+
+                    if (!helper.isEmpty(isFollow.err)) return res.status(422).json({ status: false, message: msgHelper.msg("MSG002") });
                     if (!helper.isEmpty(isFollow.data)) isFollowing = true;
                 }
 
@@ -132,7 +134,7 @@ module.exports.getUserDetails = (req, res) => {
 
                 res.status(200).json({ status: true, message: msgHelper.msg("MSG021"), data: { ...userDetails.data._doc, posts: userPosts.data, totalFollowers, totalFollowing, isFollowing } });
             } else {
-                res.status(422).json({ status: false, message: msgHelper.msg("MSG002") , error: userDetails.err});
+                res.status(422).json({ status: false, message: msgHelper.msg("MSG002"), error: userDetails.err });
             }
         } catch (error) {
             res.status(422).json({ status: false, message: msgHelper.msg("MSG002") });
@@ -216,20 +218,10 @@ module.exports.updateFollowStatus = (req, res) => {
     // validate request
     const validateData = new node_validator.Validator(formData, schema);
     validateData.check().then(async (matched) => {
-        if (!matched)
-            return res
-                .status(422)
-                .json({
-                    status: false,
-                    message: "Invalid request data",
-                    error: validateData.errors,
-                });
+        if (!matched) return res.status(422).json({status: false,message: "Invalid request data", error: validateData.errors});
 
         try {
-            if (formData.userId == userDetails._id)
-                return res
-                    .status(422)
-                    .json({ status: false, message: msgHelper.msg("MSG018") });
+            if (formData.userId == userDetails._id) return res.status(422).json({ status: false, message: msgHelper.msg("MSG018") });
 
             /* Check if user exists */
             let info1 = {};
@@ -240,8 +232,12 @@ module.exports.updateFollowStatus = (req, res) => {
                 const isFollowing = await UserModel.updateFollowStatus(info1.where, info1.data);
 
                 if (!helper.isEmpty(isFollowing.err)) return res.status(422).json({ status: false, message: msgHelper.msg("MSG002"), error: isFollowing.err });
-
                 res.status(200).json({ status: true, message: msgHelper.msg("MSG019"), data: isFollowing.data });
+
+
+                /* Emit event to insert data in notifications */
+                NotificationEvents.emit('followed-user', { following: formData.userId, follower: userDetails._id, type: 'follow' });
+
 
             } else {
                 info1.data = { following: formData.userId, follower: userDetails._id };
@@ -250,11 +246,135 @@ module.exports.updateFollowStatus = (req, res) => {
                 if (!helper.isEmpty(isFollowing.err)) return res.status(422).json({ status: false, message: msgHelper.msg("MSG002"), error: isFollowing.err });
 
                 res.status(200).json({ status: true, message: msgHelper.msg("MSG020"), data: isFollowing.data });
+                NotificationEvents.emit('unfollowed-user', { following: formData.userId, follower: userDetails._id, type: 'follow' });
             }
         } catch (error) {
-            res
-                .status(422)
-                .json({ status: false, message: error.message, error: error });
+            res.status(422).json({ status: false, message: error.message, error: error });
         }
     });
 };
+
+
+/*
+    @dev: Get all users
+    @param: page, perPageItems
+*/
+
+module.exports.getUsersList = async (req, res) => {
+    let formData = req.body
+    let userDetails = req.authData.user
+    let schema = {
+        "page": "required",
+        "perPageItem": "required",
+    }
+    const validateData = new node_validator.Validator(formData, schema);
+    validateData.check().then(async (matched) => {
+        if (!matched) return res.status(422).json({ status: false, message: msgHelper.msg('MSG001'), error: validateData.errors });
+
+        try {
+            let info = {}
+            info = {
+                limit: formData.perPageItem,
+                offset: (formData.page - 1) * formData.perPageItem,
+                where: {},
+                order: [
+                    ['createdAt', 'DESC']
+                ]
+            }
+
+
+            const users = await UserModel.getUsersList(info, userDetails._id);
+            const usersCount = await UserModel.getUsersCount(info);
+
+            if (!helper.isEmpty(users.err)) return res.status(500).json({ status: false, message: msgHelper.msg('MSG002'), error: users.err });
+            if (!helper.isEmpty(usersCount.err)) return res.status(500).json({ status: false, message: msgHelper.msg('MSG002'), error: usersCount.err });
+
+            const hasMore = (usersCount.data > (formData.page * formData.perPageItem)) ? true : false;
+
+
+
+            return res.status(200).json({ status: true, message: msgHelper.msg('MSG014'), data: { data: users.data, hasMore } });
+
+        } catch (error) {
+            res.status(500).json({ status: false, message: error.message, error: error });
+        }
+
+    });
+}
+
+
+
+/* 
+    @dev: Get all notifications
+    @param: page, perPageItems
+*/
+
+module.exports.getNotificationsList =  (req, res) => {
+    let formData = req.body
+    let userDetails = req.authData.user
+    let schema = {
+        "page": "required",
+        "perPageItem": "required",
+    }
+    const validateData = new node_validator.Validator(formData, schema);
+    validateData.check().then(async (matched) => {
+        if (!matched) return res.status(422).json({ status: false, message: msgHelper.msg('MSG001'), error: validateData.errors });
+
+        try {
+            let info = {}
+            info = {
+                limit: formData.perPageItem,
+                skip: (formData.page - 1) * formData.perPageItem,
+                where: { user: new mongoose.Types.ObjectId(userDetails._id) },
+                order: [
+                    ['createdAt', 'DESC']
+                ]
+            }
+
+            let allNotifications = await NotificationModel.getNotificationsList(info);
+            
+            if (!helper.isEmpty(allNotifications.err)) return res.status(500).json({ status: false, message: msgHelper.msg('MSG002'), error: allNotifications.err });
+
+
+            res.status(200).json({ status: true, message: msgHelper.msg('MSG014'), data: allNotifications.data });
+
+        } catch (error) {
+            res.status(500).json({ status: false, message: error.message, error: error });
+        }
+    });
+}
+
+
+/*
+    @dev: Mark notification as read
+    @param: notificationId
+*/
+
+module.exports.markNotificationAsRead = (req, res) => {
+    const formData = req.body;
+    const userDetails = req.authData.user;
+
+    const schema = {
+        notificationId: "required",
+    }
+
+    // validate request
+    const validateData = new node_validator.Validator(formData, schema);
+    validateData.check().then(async (matched) => {
+        if (!matched) return res.status(422).json({ status: false, message: "Invalid request data", error: validateData.errors });
+
+        try {
+            let info = {}
+            info.where = { _id: new mongoose.Types.ObjectId(formData.notificationId)};
+            info.data = { read: true };
+            const notification = await NotificationModel.updateNotification(info);
+
+            if (!helper.isEmpty(notification.err)) return res.status(500).json({ status: false, message: msgHelper.msg('MSG002'), error: notification.err });
+
+            res.status(200).json({ status: true, message: msgHelper.msg('MSG022'), data: notification.data });
+
+        } catch (error) {
+            res.status(500).json({ status: false, message: error.message, error: error });
+        }
+    });
+}

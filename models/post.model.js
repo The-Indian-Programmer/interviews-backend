@@ -1,4 +1,5 @@
 const postSchema = require("../schema/posts.schema");
+const CommentSchema = require("../schema/comment.schema");
 const mongoose = require("mongoose");
 let Post = {};
 
@@ -18,6 +19,24 @@ Post.createPost = (data) => {
 
 Post.getPostsList = (data, userId) => {
   return new Promise((resolve, reject) => {
+
+    const fetchTotalComments = () => {
+      return CommentSchema
+        .aggregate([
+          {
+            $match: where, // Match comments based on your criteria (e.g., postId)
+          },
+          {
+            $group: {
+              _id: '$postId',
+              totalComments: { $sum: 1 },
+            },
+          },
+        ])
+        .exec();
+    };
+
+
     let limit = data.limit;
     let skip = data.offset;
     let where = {
@@ -27,27 +46,26 @@ Post.getPostsList = (data, userId) => {
       },
     };
     let order = data.order;
-    postSchema
-      .find(where)
-      .sort(order)
-      .limit(limit)
-      .skip(skip)
-      .populate({
-        path: "author",
-        select: "username profile.name profile.profilePicture",
-      })
-      .populate({
-        path: "likes",
-        $elemMatch: !helper.isEmpty(userId) ? { _id: new mongoose.Types.ObjectId(userId) } : {},
-        select: "_id",
-      })
-      .exec()
-      .then((result) => {
-        resolve({ err: null, data: result });
-      })
-      .catch((err) => {
-        reject({ err: err, data: null });
-      });
+    Promise.all([postSchema.find(where).sort(order).limit(limit).skip(skip).populate({
+      path: "author",
+      select: "username profile.name profile.profilePicture",
+    }).populate({
+      path: "likes",
+      $elemMatch: !helper.isEmpty(userId) ? { _id: new mongoose.Types.ObjectId(userId) } : {},
+      select: "_id",
+    }).exec(), fetchTotalComments()])
+    .then(([posts, commentCounts]) => {
+      // Merge the comment counts into the posts based on postId
+      const postMap = new Map(commentCounts.map((c) => [c._id.toString(), c.totalComments]));
+      const postsWithTotalComments = posts.map((post) => ({
+        ...post.toObject(), // Convert to plain JavaScript object
+        totalComments: postMap.get(post._id.toString()) || 0, // Get the total comments or default to 0
+      }));
+      resolve({ err: null, data: postsWithTotalComments });
+    })
+    .catch((err) => {
+      reject({ err: err, data: null });
+    });
   });
 };
 
@@ -100,7 +118,7 @@ Post.updatePost = (postData) => {
   return new Promise((resolve, reject) => {
     let { where, data } = postData;
     postSchema
-      .updateOne(where, data)
+      .findOneAndUpdate(where, data)
       .then((result) => {
         resolve({ err: null, data: result });
       })

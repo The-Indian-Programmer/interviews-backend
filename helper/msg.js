@@ -24,6 +24,7 @@ module.exports.msg = function (code) {
     MSG021: "User found successfully!",
     MSG022: "Post created successfully!",
     MSG023: "Post updated successfully!",
+    MSG024: "Comment added successfully!",
   };
   return typeof codeArr[code] !== "undefined" ? codeArr[code] : "";
 };

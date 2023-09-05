@@ -107,7 +107,6 @@ User.unFollowUser = (where, data) => {
 
 User.getFollowers = (where) => {
     return new Promise((resolve, reject) => {
-       
         FollowSchema.countDocuments(where).then((result) => {
             resolve({ err: null, data: result });
         }).catch((error) => {
@@ -124,5 +123,53 @@ User.getDetails = (where, columns) => {
             reject({ err: error, data: null });
         });
     });
+}
+
+User.getUsersList = (data, userId) => {
+    return new Promise((resolve, reject) => {
+
+        let limit = data.limit;
+        let skip = data.offset;
+        let where = {
+            ...data.where,
+            status: {
+                $ne: "deleted",
+            },
+        };
+
+        if (!helper.isEmpty(userId)) {
+            where._id = {
+                $ne: userId,
+            };
+        }
+
+        let order = data.order;
+        let columns = ["_id", "username", "email", "profile", "createdAt"];
+
+        userSchema.find(where, columns).sort(order).skip(skip).limit(limit).then((result) => {
+            resolve({ err: null, data: result });
+        }).catch((error) => {
+            reject({ err: error, data: null });
+        });
+    });
+
+}
+
+User.getUsersCount = (data) => {
+    return new Promise((resolve, reject) => {
+
+        let where = {
+            ...data.where,
+            status: {
+                $ne: "deleted",
+            },
+        };
+        userSchema.countDocuments(where).then((result) => {
+            resolve({ err: null, data: result });
+        }).catch((error) => {
+            reject({ err: error, data: null });
+        });
+    });
+
 }
 module.exports = User;

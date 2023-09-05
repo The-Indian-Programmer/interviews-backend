@@ -8,6 +8,7 @@ global.msgHelper = require("./helper/msg.js");
 global.async = require("async");
 const logger = require('morgan');
 
+
 const bodyParser = require("body-parser");
 const fileUploader = require('express-fileupload');
 
@@ -21,6 +22,8 @@ const app = express();
 require("dotenv").config(); //instatiate environment variables
 
 require("./services/databaseConnection");
+
+global.NotificationEvents = require("./events/NotificationEvents.js")
 
 app.use(logger('dev'));
 app.use(express.json());
@@ -43,6 +46,7 @@ const CONFIG = require("./config/config.js");
 
 
 console.log("Environment:", CONFIG.ENVIRONMENT);
+
 
 
 app.use("/api", apiRouting);
