@@ -161,4 +161,77 @@ Post.getPostById = (data, userId) => {
       });
   });
 };
+
+
+Post.getPostDetailsByPostId = (data) => {
+  return new Promise((resolve, reject) => {
+
+    let {postId, userId} = data;
+
+    postSchema.aggregate([
+      {
+        $match: {
+          _id: new mongoose.Types.ObjectId(postId),
+        }
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "author",
+          foreignField: "_id",
+          as: "author"
+        }
+      },
+      {
+        $unwind: {
+          path: "$author",
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $lookup: {
+          from: "users",
+          localField: "likes",
+          foreignField: "_id",
+          as: "likes"
+        }
+      },
+      {
+        $lookup: {
+          from: "comments",
+          localField: "comments.postId",
+          foreignField: "_id",
+          as: "comments"
+        }
+      },
+      {
+        $unwind: {
+          path: "$comments",
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
+        $project: {
+          "author.profile": 1, 
+          "author.username": 1,
+          "likes.username": 1, 
+          "likes._id": 1,
+          "likes.profile.name": 1,
+          "postContent": 1,
+          "files": 1,
+        }
+      }
+    ]).then((result) => {
+      if (!helper.isEmpty(result)) {
+        resolve({ err: null, data: result[0] });
+      } else {
+        resolve({ err: null, data: null });
+      }
+    }).catch((err) => {
+      reject({ err: err, data: null });
+    });
+    
+  });
+}
+
 module.exports = Post;

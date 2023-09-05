@@ -1,6 +1,7 @@
 "use strict"
 require("dotenv").config()
 
+const CommentModel = require("../models/comment.model.js")
 const postModel = require("../models/post.model.js")
 
 module.exports.createPost = (req, res) => {
@@ -305,6 +306,95 @@ module.exports.getPostbyPostId = async (req, res) => {
             if (!helper.isEmpty(post.err)) return res.status(500).json({ status: false, message: msgHelper.msg('MSG002'), error: post.err });
 
             return res.status(200).json({ status: true, message: msgHelper.msg('MSG014'), data: post.data });
+
+        } catch (error) {
+            res.status(500).json({ status: false, message: error.message, error: error });
+        }
+    });
+}
+
+module.exports.getPostDetailsByPostId = (req, res) => {
+    const formData = req.body
+    const userDetail = req.authData.user
+    const schema = {
+        "postId": "required"
+    }
+
+    const validateData = new node_validator.Validator(formData, schema);
+
+    validateData.check().then(async (matched) => {
+        if (!matched) return res.status(422).json({ status: false, message: msgHelper.msg('MSG001'), error: validateData.errors });
+
+        const postDetail = await postModel.getPostDetailsByPostId({postId: formData.postId, userId: userDetail._id});
+        
+        if (!helper.isEmpty(postDetail.err)) return res.status(500).json({ status: false, message: msgHelper.msg('MSG002'), error: postDetail.err });
+
+
+        let info2 = {}
+        info2.where = {
+            postId: formData.postId
+        }
+        let commentsDetail = await CommentModel.getComment(info2.where);
+
+        if (!helper.isEmpty(commentsDetail.err)) return res.status(500).json({ status: false, message: msgHelper.msg('MSG002'), error: commentsDetail.err });
+        console.log("commentsDetail", commentsDetail.data)
+        postDetail.data.comments = commentsDetail.data
+
+        return res.status(200).json({ status: true, message: msgHelper.msg('MSG014'), data: postDetail.data});
+    });
+}
+
+
+module.exports.addPostComment = (req, res) => {
+    const formData = req.body
+    const userDetail = req.authData.user
+    const schema = {
+        "postId": "required",
+        "comment": "required",
+    }
+
+    const validateData = new node_validator.Validator(formData, schema);
+    validateData.check().then(async (matched) => {
+        if (!matched) return res.status(422).json({ status: false, message: msgHelper.msg('MSG001'), error: validateData.errors });
+
+        try {
+            let currentTime = moment().format("YYYY-MM-DD HH:mm:ss")
+            let info = {}
+            info.data = {
+                postId: formData.postId,
+                comment: formData.comment,
+                userId: userDetail._id,
+                status: "active",
+                createdAt: currentTime,
+                updatedAt: currentTime,
+            }
+
+            const post = await CommentModel.addPostComment(info.data);
+
+            return res.status(200).json({ status: true, message: msgHelper.msg('MSG017'), data: { userId: userDetail._id, postId: formData.postId } });
+
+        } catch (error) {
+            res.status(500).json({ status: false, message: error.message, error: error });
+        }
+    });
+}
+
+module.exports.updatePostComment = (req, res) => {
+    const formData = req.body
+    const userDetail = req.authData.user
+    const schema = {
+        "postId": "required",
+        "comment": "required",
+    }
+
+    const validateData = new node_validator.Validator(formData, schema);
+    validateData.check().then(async (matched) => {
+        if (!matched) return res.status(422).json({ status: false, message: msgHelper.msg('MSG001'), error: validateData.errors });
+
+        try {
+            // 
+
+            return res.status(200).json({ status: true, message: msgHelper.msg('MSG017'), data: { userId: userDetail._id, postId: formData.postId } });
 
         } catch (error) {
             res.status(500).json({ status: false, message: error.message, error: error });

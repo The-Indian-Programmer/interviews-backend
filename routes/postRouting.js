@@ -11,5 +11,8 @@ router.post("/get-posts", helper.verifyToken, PostController.getPostsList)
 router.post("/delete-post", helper.verifyToken, PostController.deletePost)
 router.post("/update-post-like-dislike", helper.verifyToken, PostController.updatePostLikeDislike)
 router.post("/get-post-by-id", helper.verifyToken, PostController.getPostbyPostId)
+router.post("/get-post-details-by-post-id", helper.verifyToken, PostController.getPostDetailsByPostId)
+router.post("/add-post-comment", helper.verifyToken, PostController.addPostComment)
+router.post("/update-post-comment", helper.verifyToken, PostController.updatePostComment)
 
 module.exports = router
