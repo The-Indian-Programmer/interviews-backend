@@ -8,6 +8,7 @@ const app = require('../app');
 const debug = require('debug')('server:server');
 const http = require('http');
 const CONFIG = require('../config/config.js');
+const socketIo = require('socket.io');
 /**
  * Get port from environment and store in Express.
  */
@@ -19,6 +20,9 @@ app.set('port', port);
  * Create HTTP server.
  */
 const server = http.createServer(app);
+
+// Initiate socket server
+require('../web-sockets')(server);
 
 /**
  * Listen on provided port, on all network interfaces.
