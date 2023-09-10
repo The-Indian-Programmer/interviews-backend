@@ -94,7 +94,7 @@ module.exports.updateTask = (req, res) => {
                 updatedAt: currentTime
             };
 
-    
+
 
             if (!helper.isEmpty(formData.status)) info2.data.status = formData.status;
             if (!helper.isEmpty(formData.priority)) info2.data.priority = formData.priority;
@@ -141,7 +141,7 @@ module.exports.deleteTask = (req, res) => {
 
             // check if user own this tasks
             let info = {};
-            info.columns = ['taskID','userID'];
+            info.columns = ['taskID', 'userID'];
             info.table = 'tasks';
             info.where = { taskID: formData.taskID };
 
@@ -197,7 +197,7 @@ module.exports.updateTaskStatus = (req, res) => {
 
             // check if user own this tasks
             let info = {};
-            info.columns = ['taskID','userID'];
+            info.columns = ['taskID', 'userID'];
             info.table = 'tasks';
             info.where = { taskID: formData.taskID };
 
@@ -258,7 +258,7 @@ module.exports.getAllTasks = (req, res) => {
         try {
             // get all tasks
             let info = {
-                "where": {"userID": userData.userID},
+                "where": { "userID": userData.userID },
                 "limit": parseInt(formData.perPageItem),
                 "offset": parseInt(formData.page) * parseInt(formData.perPageItem) - parseInt(formData.perPageItem),
                 "order": formData.order,
@@ -279,7 +279,7 @@ module.exports.getAllTasks = (req, res) => {
             let taskCount = await TaskModel.getAllTaskCount(info);
 
             if (!helper.isEmpty(taskCount.err)) return res.status(500).json({ status: false, message: msgHelper.msg('MSG002'), error: taskCount.err.message });
-            
+
 
             res.status(200).json({ status: true, message: msgHelper.msg('MSG017'), data: allTasks.data, count: taskCount.data });
         } catch (error) {
@@ -328,4 +328,51 @@ module.exports.getTaskDetails = (req, res) => {
             return res.status(500).json({ status: false, message: msgHelper.msg('MSG002'), error: error.message });
         }
     });
+}
+
+
+/**
+ * @api {post} /task/get-tasks-info Get Tasks Info
+ * @apiName Get Tasks Info
+ * @apiGroup Task
+ * @apiSuccess {Boolean} status Status of the request.
+ * @apiSuccess {String} message Message of the request.
+ * @apiSuccess {String} data Data of the request. 
+ */
+
+module.exports.getTasksInfo = (req, res) => {
+    const userData = req.authData.user
+    const formData = req.body
+
+    const schema = {}
+
+    const validateData = new node_validator.Validator(formData, schema)
+    validateData.check().then(async matched => {
+        if (!matched) return res.status(422).json({ status: false, message: 'Invalid request data', error: validateData.errors })
+
+        try {
+            /*
+             * 1 => All Tasks
+             * 2 => Pending Tasks
+             * 3 => Completed Tasks
+             */
+
+            let info = {}
+            info.where = { userID: userData.userID }
+            info.columns = ['status']
+
+            let allTasks = await TaskModel.getAllTaskInfo(info)
+            
+            if (!helper.isEmpty(allTasks.err)) return res.status(500).json({ status: false, message: msgHelper.msg('MSG002'), error: allTasks.err.message })
+
+            let pendingTasksCount = allTasks.data.filter((task) => task.status === 'pending').length
+            let completedTasksCount = allTasks.data.filter((task) => task.status === 'completed').length
+            let allTasksCount = allTasks.data.length
+
+            res.status(200).json({ status: true, message: msgHelper.msg('MSG017'), data: { pending: pendingTasksCount, completed: completedTasksCount, total: allTasksCount } })
+
+        } catch (error) {
+            res.status(500).json({ status: false, message: msgHelper.msg('MSG002'), error: error.message })
+        }
+    })
 }

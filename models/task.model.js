@@ -1,9 +1,9 @@
 const { Sequelize, DataTypes, Model } = require('sequelize');
 const users = require('./user.model');
 class Tasks extends Model {
-    static associate({users}) {
+    static associate({ users }) {
         // define association here
-        this.belongsTo(users, {foreignKey: 'userId', as: 'user' })
+        this.belongsTo(users, { foreignKey: 'userId', as: 'user' })
     }
 }
 
@@ -57,7 +57,7 @@ Tasks.init({
         allowNull: false,
         defaultValue: Sequelize.NOW
     }
-},{sequelize, modelName: 'tasks'});
+}, { sequelize, modelName: 'tasks' });
 
 // the defined model is the class itself
 // console.log(Tasks === sequelize.models.Tasks); // true
@@ -65,7 +65,7 @@ Tasks.init({
 
 Tasks.getAllTasks = (data) => {
     return new Promise(async (resolve, reject) => {
-        let {where, limit, offset, order, orderBy} = data;
+        let { where, limit, offset, order, orderBy } = data;
         // status not deleted
 
         if (!helper.isEmpty(where.status)) {
@@ -79,7 +79,7 @@ Tasks.getAllTasks = (data) => {
             }
         }
 
-     
+
         let tasks = await Tasks.findAll({
             where,
             limit,
@@ -90,9 +90,9 @@ Tasks.getAllTasks = (data) => {
         });
 
         if (tasks != null) {
-            resolve({err: null, data: tasks});
+            resolve({ err: null, data: tasks });
         } else {
-            resolve({err: 'MSG014', data: null});
+            resolve({ err: 'MSG014', data: null });
         }
     });
 }
@@ -100,7 +100,7 @@ Tasks.getAllTasks = (data) => {
 
 Tasks.getAllTaskCount = (data) => {
     return new Promise(async (resolve, reject) => {
-        let {where} = data;
+        let { where } = data;
         // status not deleted
         if (!helper.isEmpty(where.status)) {
             where.status = {
@@ -120,9 +120,33 @@ Tasks.getAllTaskCount = (data) => {
 
 
         if (tasks !== null) {
-            resolve({err: null, data: tasks});
+            resolve({ err: null, data: tasks });
         } else {
-            resolve({err: tasks, data: null});
+            resolve({ err: tasks, data: null });
+        }
+    });
+}
+
+Tasks.getAllTaskInfo = (data) => {
+    return new Promise(async (resolve, reject) => {
+        let { where, columns } = data;
+        // status not deleted
+
+
+        where.status = {
+            [Sequelize.Op.ne]: 'deleted'
+        }
+
+        let tasks = await Tasks.findAll({
+            where,
+            attributes: columns,
+            raw: true
+        });
+
+        if (tasks != null) {
+            resolve({ err: null, data: tasks });
+        } else {
+            resolve({ err: 'MSG014', data: null });
         }
     });
 }
