@@ -56,10 +56,10 @@ UserCV.init({
     defaultValue: Sequelize.NOW,
   },
 }, {
+  sequelize,
   modelName: 'UserCV',
   tableName: 'userCVs',
   timestamps: true,
-  underscored: true,
 });
 
 module.exports = UserCV;

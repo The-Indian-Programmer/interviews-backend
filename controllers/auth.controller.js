@@ -8,7 +8,7 @@ const UserModel = require("../models/user.model.js")
  * @api {post} /auth/create-user Create User
  * @apiName Create User
  * @apiGroup Auth
- * @param {String} username Username, required
+ * @param {String} email Email, required
  * @param {String} password Password, required
  * @apiSuccess {Boolean} status Status of the request.
  * @apiSuccess {String} message Message of the request.
@@ -36,13 +36,14 @@ module.exports.createUser = (req, res) => {
 
             let userExistsCheck = await UserModel.findOne({ where: info.where, attributes: info.columns })
 
-            if (!helper.isEmpty(userExistsCheck)) return res.status(409).json({ status: false, message: msgHelper.msg('MSG005') });
+            if (!helper.isEmpty(userExistsCheck)) return res.status(409).json({ status: false, message: msgHelper.msg('MSG004') });
 
             // insert user
             let currentTime = moment().format('YYYY-MM-DD HH:mm:ss')
             let info2 = {}
             info2.data = {
-                email: formData.username,
+                email: formData.email,
+                userName: (formData.email).split('@')[0],
                 password: helper.encrypt(formData.password),
                 createdAt: currentTime,
                 updatedAt: currentTime
@@ -64,7 +65,7 @@ module.exports.createUser = (req, res) => {
  * @api {post} /auth/login Login
  * @apiName Login
  * @apiGroup Auth
- * @param {String} username Username, required
+ * @param {String} email Email, required
  * @param {String} password Password, required
  * @apiSuccess {Boolean} status Status of the request.
  * @apiSuccess {String} message Message of the request.

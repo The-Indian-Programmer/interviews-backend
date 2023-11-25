@@ -34,10 +34,10 @@ CVTemplate.init({
     defaultValue: Sequelize.NOW,
   },
 }, {
+  sequelize,
   modelName: 'CVTemplate',
   tableName: 'CVTemplates',
   timestamps: true,
-  underscored: true,
 });
 
 module.exports = CVTemplate;

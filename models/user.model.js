@@ -22,6 +22,7 @@ User.init({
   },
   phone: {
     type: DataTypes.STRING(20),
+    allowNull: true,
   },
   password: {
     type: DataTypes.STRING(255),
@@ -34,6 +35,7 @@ User.init({
   facebookAccountID: {
     type: DataTypes.STRING(255),
     unique: true,
+    allowNull: true,
   },
   createdAt: {
     type: DataTypes.DATE,
@@ -46,12 +48,10 @@ User.init({
     defaultValue: Sequelize.NOW,
   },
 }, {
-  // Other model options go here
-  sequelize, // We need to pass the connection instance
+  sequelize,
   modelName: 'User', // We need to choose the model name
   tableName: 'users', // Optional: Set the table name explicitly
   timestamps: true, // Optional: Sequelize will automatically create createdAt and updatedAt columns
-  underscored: true, // Optional: Use snake_case instead of camelCase for automatically added attributes
 });
 
 module.exports = User;
