@@ -36,10 +36,7 @@ module.exports.createUser = (req, res) => {
 
             let userExistsCheck = await UserModel.findOne({ where: info.where, attributes: info.columns })
 
-
             if (!helper.isEmpty(userExistsCheck)) return res.status(409).json({ status: false, message: msgHelper.msg('MSG005') });
-
-
 
             // insert user
             let currentTime = moment().format('YYYY-MM-DD HH:mm:ss')
@@ -55,8 +52,6 @@ module.exports.createUser = (req, res) => {
 
 
             if (helper.isEmpty(userInsert)) return res.status(500).json({ status: false, message: msgHelper.msg('MSG002'), error: userInsert });
-
-
             res.status(201).json({ status: true, message: msgHelper.msg('MSG008'), data: userInsert.dataValues.userId });
         } catch (error) {
             res.status(500).json({ status: false, message: msgHelper.msg('MSG002'), error: error.message });
@@ -124,8 +119,6 @@ module.exports.login = (req, res) => {
 module.exports.getUser = async (req, res) => {
 
     try {
-
-
         const userData = req.authData.user
 
         if (helper.isEmpty(userData)) return res.status(401).json({ status: false, message: msgHelper.msg('MSG007') });

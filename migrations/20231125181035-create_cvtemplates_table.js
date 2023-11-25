@@ -2,36 +2,25 @@
 
 module.exports = {
   up: async (queryInterface, Sequelize) => {
-    await queryInterface.createTable('Users', {
-      userID: {
+    await queryInterface.createTable('CVTemplates', {
+      templateID: {
         type: Sequelize.INTEGER,
         autoIncrement: true,
         primaryKey: true,
       },
-      userName: {
-        type: Sequelize.STRING(255),
-        allowNull: false,
-        unique: true,
-      },
-      email: {
-        type: Sequelize.STRING(255),
-        allowNull: false,
-        unique: true,
-      },
-      phone: {
-        type: Sequelize.STRING(20),
-      },
-      password: {
+      templateName: {
         type: Sequelize.STRING(255),
         allowNull: false,
       },
-      googleAccountID: {
-        type: Sequelize.STRING(255),
-        unique: true,
+      templateDescription: {
+        type: Sequelize.TEXT,
       },
-      facebookAccountID: {
+      templateContent: {
+        type: Sequelize.LONGTEXT,
+      },
+      previewImageURL: {
         type: Sequelize.STRING(255),
-        unique: true,
+        allowNull: false,
       },
       createdAt: {
         type: Sequelize.DATE,
@@ -45,6 +34,6 @@ module.exports = {
   },
 
   down: async (queryInterface, Sequelize) => {
-    await queryInterface.dropTable('Users');
+    await queryInterface.dropTable('CVTemplates');
   }
 };

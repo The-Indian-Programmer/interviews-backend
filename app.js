@@ -11,9 +11,7 @@ const logger = require('morgan');
 
 const bodyParser = require("body-parser");
 const path = require("path");
-const apiRouting = require("./routes/apiRouting");
 const authRouting = require("./routes/authRouting");
-const taskRouting = require("./routes/taskRouting");
 const app = express();
 require("dotenv").config(); //instatiate environment variables
 
@@ -32,9 +30,7 @@ const CONFIG = require("./configs/config.js");
 console.log("Environment:", CONFIG.ENVIRONMENT);
 
 
-app.use("/api", apiRouting);
 app.use("/auth", authRouting);
-app.use("/task", taskRouting);
 
 
 // return 404 if no route matched
