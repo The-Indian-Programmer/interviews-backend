@@ -17,7 +17,7 @@ const UserModel = require("../models/user.model.js")
 module.exports.createUser = (req, res) => {
     let formData = req.body
     let schema = {
-        "username": "required",
+        "email": "required",
         "password": "required",
     }
     // validate request
@@ -31,7 +31,7 @@ module.exports.createUser = (req, res) => {
             info.columns = ['userID']
             info.table = 'users'
             info.where = {
-                username: formData.username
+                email: formData.email
             }
 
             let userExistsCheck = await UserModel.findOne({ where: info.where, attributes: info.columns })
@@ -42,7 +42,7 @@ module.exports.createUser = (req, res) => {
             let currentTime = moment().format('YYYY-MM-DD HH:mm:ss')
             let info2 = {}
             info2.data = {
-                username: formData.username,
+                email: formData.username,
                 password: helper.encrypt(formData.password),
                 createdAt: currentTime,
                 updatedAt: currentTime
@@ -73,7 +73,7 @@ module.exports.createUser = (req, res) => {
 module.exports.login = (req, res) => {
     let formData = req.body
     let schema = {
-        "username": "required",
+        "email": "required",
         "password": "required",
     }
 
@@ -85,9 +85,9 @@ module.exports.login = (req, res) => {
         try {
             // check if user exists
             let info = {}
-            info.columns = ['userID', 'username', 'password']
+            info.columns = ['userID', 'email', 'password']
             info.table = 'users'
-            info.where = { username: formData.username }
+            info.where = { email: formData.email }
 
             let userExistCheck = await UserModel.findOne({ where: info.where, attributes: info.columns })
 
@@ -97,7 +97,7 @@ module.exports.login = (req, res) => {
             if (helper.decrypt(userExistCheck.dataValues.password) !== formData.password) return res.status(401).json({ status: false, message: msgHelper.msg('MSG007') });
 
             // generate token
-            let token = jwt.sign({ userID: userExistCheck.dataValues.userID, username: userExistCheck.dataValues.username }, process.env.SECRET_TOKEN, { expiresIn: '24h' });
+            let token = jwt.sign({ userID: userExistCheck.dataValues.userID, email: userExistCheck.dataValues.email }, process.env.SECRET_TOKEN, { expiresIn: '24h' });
 
             res.status(200).json({ status: true, message: msgHelper.msg('MSG009'), token: token });
 
@@ -124,7 +124,7 @@ module.exports.getUser = async (req, res) => {
         if (helper.isEmpty(userData)) return res.status(401).json({ status: false, message: msgHelper.msg('MSG007') });
 
         let info = {}
-        info.columns = ['userID', 'username']
+        info.columns = ['userID', 'email']
         info.where = { userID: userData.userID }
         info.table = 'users'
 
