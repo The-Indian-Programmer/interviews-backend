@@ -2,14 +2,14 @@
   "localhost": {
     "username": "root",
     "password": "123456",
-    "database": "todolist",
+    "database": "resumeBuilder",
     "host": "localhost",
     "dialect": "mysql"
   },
   "development": {
     "username": "root",
     "password": "123456",
-    "database": "todolist",
+    "database": "resumeBuilder",
     "host": "localhost",
     "dialect": "mysql"
   },

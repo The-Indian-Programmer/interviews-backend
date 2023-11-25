@@ -16,7 +16,7 @@ module.exports = {
         type: Sequelize.TEXT,
       },
       templateContent: {
-        type: Sequelize.LONGTEXT,
+        type: Sequelize.TEXT('long'),
       },
       previewImageURL: {
         type: Sequelize.STRING(255),
